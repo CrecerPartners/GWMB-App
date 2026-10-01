@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   image:{width:'100%',height:'100%'},
   mediaShade:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'rgba(0,0,0,.22)'},
   mediaCopy:{position:'absolute',left:20,right:20,bottom:20},
-  tag:{color:'#FFD3E7',fontSize:8,fontFamily:fonts.bodyBold,letterSpacing:1.1},
+  tag:{color:'#FFD3E7',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:1.1},
   mediaTitle:{color:'white',fontSize:29,lineHeight:33,fontFamily:fonts.heading,marginTop:7},
   mediaRole:{color:'white',fontSize:11,fontFamily:fonts.bodyMedium,marginTop:4},
   title:{color:colors.ink,fontSize:24,fontFamily:fonts.heading,letterSpacing:-.7,marginTop:24},

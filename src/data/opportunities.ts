@@ -6,6 +6,7 @@ export type Opportunity = {
   type: string;
   location: string;
   deadline: string;
+  deadlineAt?: string;
   source: string;
   access: 'Open Access' | 'Members Only';
   summary: string;
@@ -20,6 +21,7 @@ export const opportunities: Opportunity[] = [
     type: 'Internship',
     location: 'Lagos · Hybrid',
     deadline: 'Closes 04 Oct',
+    deadlineAt: '2026-10-04T23:59:00+01:00',
     source: 'GWMB Partner',
     access: 'Members Only',
     summary: 'Build practical experience on meaningful projects in a fast-moving fintech environment.',
@@ -32,6 +34,7 @@ export const opportunities: Opportunity[] = [
     type: 'Scholarship',
     location: 'Remote',
     deadline: 'Closes 12 Oct',
+    deadlineAt: '2026-10-12T23:59:00+01:00',
     source: 'Third Party',
     access: 'Open Access',
     summary: 'Access supported digital-skills training and build a portfolio for your next opportunity.',
