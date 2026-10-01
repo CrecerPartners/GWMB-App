@@ -1,0 +1,53 @@
+export type Opportunity = {
+  id: string;
+  initials: string;
+  title: string;
+  org: string;
+  type: string;
+  location: string;
+  deadline: string;
+  source: string;
+  access: 'Open Access' | 'Members Only';
+  summary: string;
+};
+
+export const opportunities: Opportunity[] = [
+  {
+    id: 'flutterwave',
+    initials: 'FL',
+    title: 'Graduate Internship Programme',
+    org: 'Flutterwave',
+    type: 'Internship',
+    location: 'Lagos · Hybrid',
+    deadline: 'Closes 04 Oct',
+    source: 'GWMB Partner',
+    access: 'Members Only',
+    summary: 'Build practical experience on meaningful projects in a fast-moving fintech environment.',
+  },
+  {
+    id: 'women-tech',
+    initials: 'WT',
+    title: 'Women in Tech Scholarship',
+    org: 'Future Skills Africa',
+    type: 'Scholarship',
+    location: 'Remote',
+    deadline: 'Closes 12 Oct',
+    source: 'Third Party',
+    access: 'Open Access',
+    summary: 'Access supported digital-skills training and build a portfolio for your next opportunity.',
+  },
+  {
+    id: 'gwmb-fund',
+    initials: 'GW',
+    title: 'Emerging Leaders Fellowship',
+    org: 'Girls Who Mean Business',
+    type: 'Fellowship',
+    location: 'Nigeria',
+    deadline: 'Rolling',
+    source: 'GWMB Sponsored',
+    access: 'Members Only',
+    summary: 'Grow your leadership confidence through guided learning, projects and a supportive cohort.',
+  },
+];
+
+export const opportunityById = Object.fromEntries(opportunities.map((item) => [item.id, item])) as Record<string, Opportunity>;

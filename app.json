@@ -1,25 +1,53 @@
 {
   "expo": {
-    "name": "mobile-app",
-    "slug": "mobile-app",
+    "name": "GWMB – Girls Who Mean Business",
+    "slug": "gwmb-girls-who-mean-business",
+    "owner": "girls-who-mean-business",
+    "scheme": "gwmb",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "org.girlswhomeanbusiness.app"
     },
     "android": {
+      "package": "org.girlswhomeanbusiness.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
+    },
+    "experiments": {
+      "typedRoutes": true
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-sqlite",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GWMB uses the photo you choose as your profile picture.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "26765876-ea6a-49ff-b894-91e32b9edc30"
+      }
     }
   }
 }
