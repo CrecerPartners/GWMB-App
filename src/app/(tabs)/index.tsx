@@ -30,14 +30,14 @@ import { colors, fonts } from '@/theme';
 const router = { push: (href: string) => expoRouter.push(href as never) };
 
 const benefits = [
-  ['Career', 'briefcase-outline'],
-  ['Mentorship', 'people-outline'],
-  ['Skills', 'play-circle-outline'],
-  ['Money', 'wallet-outline'],
-  ['Leadership', 'sparkles-outline'],
-  ['Growth', 'trending-up-outline'],
-  ['Sisterhood', 'heart-outline'],
-  ['Opportunities', 'telescope-outline'],
+  { label: 'Career', icon: 'briefcase-outline', promise: 'Get ready for internships, jobs and the workplace.', tone: '#E62B7F', dark: true },
+  { label: 'Mentorship', icon: 'people-outline', promise: 'Get guidance from professionals who have walked the path.', tone: '#3150E8', dark: true },
+  { label: 'Learning & Skills', icon: 'play-circle-outline', promise: 'Build practical skills beyond the classroom.', tone: '#111011', dark: true },
+  { label: 'Smart Money', icon: 'wallet-outline', promise: 'Make stronger, smarter money decisions.', tone: '#FFC928', dark: false },
+  { label: 'Leadership', icon: 'sparkles-outline', promise: 'Develop the confidence and skills to lead.', tone: '#7A35D1', dark: true },
+  { label: 'Personal Growth', icon: 'trending-up-outline', promise: 'Set meaningful goals and follow through.', tone: '#FF6700', dark: true },
+  { label: 'Sisterhood', icon: 'heart-outline', promise: 'Find your people and grow with them.', tone: '#C91867', dark: true },
+  { label: 'Opportunities', icon: 'telescope-outline', promise: 'Discover openings that can move you forward.', tone: '#078765', dark: true },
 ] as const;
 
 const communityPhotos = [
@@ -53,22 +53,59 @@ const communityPhotos = [
   require('../../../assets/media/community/member-10.png'),
 ] as const;
 
+const memberWins = [
+  {
+    category: 'PAID INTERNSHIP',
+    title: 'Celebrating Matilda Yakubo for landing a paid internship.',
+    copy: 'A brilliant next step in her marketplace journey and a win worth celebrating.',
+    image: require('../../../assets/media/community/member-01.png'),
+  },
+  {
+    category: 'FELLOWSHIP',
+    title: 'A GWMB girlie has secured a competitive fellowship.',
+    copy: 'A bold opportunity to learn, contribute and grow her professional network.',
+    image: require('../../../assets/media/community/member-02.png'),
+  },
+  {
+    category: 'FIRST ROLE',
+    title: 'Celebrating a confident move from classroom to career.',
+    copy: 'Her first graduate role marks the beginning of an exciting new chapter.',
+    image: require('../../../assets/media/community/member-04.png'),
+  },
+  {
+    category: 'BUSINESS MILESTONE',
+    title: 'A brilliant idea has become a first paying client.',
+    copy: 'We are celebrating the courage it takes to start, build and keep showing up.',
+    image: require('../../../assets/media/community/member-08.png'),
+  },
+] as const;
+
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const { user, profile, membership } = useAuth();
   const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [benefitIndex, setBenefitIndex] = useState(0);
   const featureScroller = useRef<ScrollView>(null);
+  const resumeScroller = useRef<ScrollView>(null);
   const benefitsScroller = useRef<ScrollView>(null);
   const opportunitiesScroller = useRef<ScrollView>(null);
   const communityScroller = useRef<ScrollView>(null);
+  const memberWinsScroller = useRef<ScrollView>(null);
+  const todayScroller = useRef<ScrollView>(null);
   const benefitsPosition = useRef(0);
+  const resumePosition = useRef(0);
   const opportunitiesPosition = useRef(0);
   const communityPosition = useRef(0);
+  const memberWinsPosition = useRef(0);
+  const todayPosition = useRef(0);
   const benefitsPausedUntil = useRef(0);
+  const resumePausedUntil = useRef(0);
   const opportunitiesPausedUntil = useRef(0);
   const communityPausedUntil = useRef(0);
+  const memberWinsPausedUntil = useRef(0);
+  const todayPausedUntil = useRef(0);
   const cvCourse = courses['workplace-foundations'];
   const userId = user?.id;
 
@@ -95,6 +132,8 @@ export default function HomeScreen() {
   const nextEvent = nextRegistration ? eventById[nextRegistration.event_id] : null;
   const soonestEvent = [...upcomingEvents].sort((a, b) => new Date(a.startsAt ?? 0).getTime() - new Date(b.startsAt ?? 0).getTime())[0];
   const heroWidth = Math.min(Math.max(width * 0.82, 286), 430);
+  const resumeWidth = Math.min(Math.max(width * 0.66, 238), 300);
+  const benefitWidth = Math.min(Math.max(width * 0.43, 156), 190);
   const heroGap = 12;
 
   const featureCards = useMemo(() => [
@@ -112,6 +151,12 @@ export default function HomeScreen() {
     },
   ], [courseProgress, cvPercent]);
 
+  const todaySignals = [
+    { label: 'HAPPENING SOON', title: soonestEvent.title, meta: eventCountdown(soonestEvent.startsAt) || soonestEvent.dateShort, icon: 'calendar-outline', tone: colors.ink, light: true, route: `/event/${soonestEvent.id}` },
+    { label: 'NEW FOR YOU', title: 'The Weekly Planning Template', meta: 'A practical 5-page resource', icon: 'document-text-outline', tone: '#EFEDFF', light: false, route: '/resource/weekly-planning' },
+    { label: urgencyLabel(opportunities[0].deadlineAt) || 'OPPORTUNITY', title: opportunities[0].title, meta: opportunities[0].org, icon: 'briefcase-outline', tone: colors.pinkSoft, light: false, route: `/opportunity/${opportunities[0].id}` },
+  ] as const;
+
   useEffect(() => {
     const timer = setInterval(() => {
       const next = (featuredIndex + 1) % featureCards.length;
@@ -127,11 +172,19 @@ export default function HomeScreen() {
       position.current = (position.current + 1) % count;
       scroller.current?.scrollTo({ x: position.current * step, animated: position.current !== 0 });
     };
-    const benefitsTimer = setInterval(() => advance(benefitsScroller, benefitsPosition, benefitsPausedUntil, benefits.length, 121), 3000);
+    const benefitsTimer = setInterval(() => {
+      if (Date.now() < benefitsPausedUntil.current) return;
+      benefitsPosition.current = (benefitsPosition.current + 1) % benefits.length;
+      setBenefitIndex(benefitsPosition.current);
+      benefitsScroller.current?.scrollTo({ x: benefitsPosition.current * (benefitWidth + 10), animated: benefitsPosition.current !== 0 });
+    }, 3600);
+    const resumeTimer = setInterval(() => advance(resumeScroller, resumePosition, resumePausedUntil, 4, resumeWidth + 10), 4300);
     const opportunitiesTimer = setInterval(() => advance(opportunitiesScroller, opportunitiesPosition, opportunitiesPausedUntil, opportunities.length, 228), 3900);
     const communityTimer = setInterval(() => advance(communityScroller, communityPosition, communityPausedUntil, communityPhotos.length, 116), 2500);
-    return () => { clearInterval(benefitsTimer); clearInterval(opportunitiesTimer); clearInterval(communityTimer); };
-  }, []);
+    const memberWinsTimer = setInterval(() => advance(memberWinsScroller, memberWinsPosition, memberWinsPausedUntil, memberWins.length, heroWidth + heroGap), 4600);
+    const todayTimer = setInterval(() => advance(todayScroller, todayPosition, todayPausedUntil, 3, 220), 3300);
+    return () => { clearInterval(benefitsTimer); clearInterval(resumeTimer); clearInterval(opportunitiesTimer); clearInterval(communityTimer); clearInterval(memberWinsTimer); clearInterval(todayTimer); };
+  }, [benefitWidth, heroWidth, resumeWidth]);
 
   function pauseAutoScroll(target: MutableRefObject<number>) { target.current = Date.now() + 8000; }
 
@@ -140,13 +193,33 @@ export default function HomeScreen() {
     setFeaturedIndex(Math.max(0, Math.min(featureCards.length - 1, Math.round(event.nativeEvent.contentOffset.x / step))));
   }
 
+  const benefitsSection = <FadeIn delay={250}><View style={styles.sectionHead}><View><Text style={styles.kicker}>YOUR GWMB BENEFITS</Text><Text style={styles.sectionTitle}>Explore your benefits</Text></View><Text style={styles.swipeLabel}>Swipe</Text></View>
+      <ScrollView ref={benefitsScroller} horizontal decelerationRate="fast" snapToInterval={benefitWidth + 10} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.benefitsTrack} onScrollBeginDrag={() => pauseAutoScroll(benefitsPausedUntil)} onMomentumScrollEnd={(event) => { const next = Math.max(0, Math.min(benefits.length - 1, Math.round(event.nativeEvent.contentOffset.x / (benefitWidth + 10)))); benefitsPosition.current = next; setBenefitIndex(next); }}>
+        {benefits.map((benefit, index) => <Pressable key={benefit.label} onPress={() => { void tapFeedback(); if (benefit.label === 'Opportunities') router.push('/opportunities'); else router.push('/membership'); }} style={({ pressed }) => [styles.benefitStory, { width: benefitWidth, backgroundColor: pressed ? colors.pinkDeep : benefit.tone }, pressed && styles.benefitStoryPressed]}>
+          {({ pressed }) => { const light = pressed || benefit.dark; return <><View style={styles.benefitStoryTop}><View style={styles.benefitLargeIcon}><Ionicons name={benefit.icon} size={27} color={colors.pinkDeep}/></View><Text style={[styles.benefitStoryIndex, light && styles.benefitLight]}>0{index + 1}</Text></View><View style={styles.benefitStoryBottom}><View style={styles.benefitTitleRow}><Text style={[styles.benefitStoryName, light && styles.benefitLight]}>{benefit.label}</Text><View style={[styles.benefitArrow, light && styles.benefitArrowLight]}><Ionicons name="arrow-forward" size={15} color={light ? colors.ink : 'white'}/></View></View><Text numberOfLines={2} style={[styles.benefitPromise, light && styles.benefitPromiseLight]}>{benefit.promise}</Text></View></>; }}
+        </Pressable>)}
+      </ScrollView>
+      <View style={styles.benefitProgress}><Text style={styles.benefitProgressCount}>0{benefitIndex + 1}</Text><View style={styles.benefitProgressTrack}>{benefits.map((benefit, index) => <View key={benefit.label} style={[styles.benefitProgressDot, index === benefitIndex && styles.benefitProgressDotActive]}/>)}</View><Text style={styles.benefitProgressCount}>08</Text></View>
+      <SpringPressable onPress={() => { void tapFeedback(); router.push('/membership'); }} style={styles.benefitsCta} contentStyle={styles.benefitsCtaContent}><View><Text style={styles.benefitsCtaLabel}>THE FULL GWMB EXPERIENCE</Text><Text style={styles.benefitsCtaTitle}>View full benefits</Text></View><View style={styles.whiteArrow}><Ionicons name="arrow-forward" size={17} color={colors.ink}/></View></SpringPressable></FadeIn>;
+
+  const opportunitiesSection = <FadeIn delay={320}><View style={styles.sectionHead}><View><Text style={styles.kicker}>CURATED FOR YOUR NEXT MOVE</Text><Text style={styles.sectionTitle}>Opportunities Corner</Text></View><Pressable onPress={() => router.push('/opportunities')}><Text style={styles.sectionLink}>See all</Text></Pressable></View>
+      <ScrollView ref={opportunitiesScroller} horizontal decelerationRate="fast" snapToInterval={228} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.opportunityTrack} onScrollBeginDrag={() => pauseAutoScroll(opportunitiesPausedUntil)} onMomentumScrollEnd={(event) => { opportunitiesPosition.current = Math.round(event.nativeEvent.contentOffset.x / 228); }}>
+        {opportunities.map((item, index) => <SpringPressable key={item.id} onPress={() => { void tapFeedback(); router.push(`/opportunity/${item.id}`); }} style={styles.opportunityCard} contentStyle={styles.opportunityContent}>
+          <View style={styles.opportunityTop}><View style={[styles.brandMark, index === 1 && styles.brandMarkPink]}><Text style={[styles.brandInitials, index === 1 && styles.brandInitialsLight]}>{item.initials}</Text></View><View style={[styles.deadlinePill, urgencyLabel(item.deadlineAt) && styles.urgentPill]}><Text style={[styles.deadlineText, urgencyLabel(item.deadlineAt) && styles.urgentText]}>{urgencyLabel(item.deadlineAt) || item.deadline.replace('Closes ', '')}</Text></View></View>
+          <Text style={styles.opportunityType}>{item.type.toUpperCase()}</Text>
+          <Text numberOfLines={2} style={styles.opportunityTitle}>{item.title}</Text>
+          <Text style={styles.opportunityOrg}>{item.org}</Text>
+          <View style={styles.opportunityFooter}><Text style={styles.opportunityLocation}>{item.location}</Text><Ionicons name="arrow-forward" size={16} color={colors.pinkDeep}/></View>
+        </SpringPressable>)}
+      </ScrollView></FadeIn>;
+
   return (
     <Screen>
       <FadeIn delay={40}><View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.dateLabel}>YOUR GWMB TODAY</Text>
           <Text numberOfLines={1} style={styles.greeting}>Hey, {firstName} <Text style={styles.wave}>✦</Text></Text>
-          <Text style={styles.subGreeting}>{isMember ? 'Your next move is waiting.' : 'Come in. There’s something here for you.'}</Text>
+          <Text style={styles.subGreeting}>You’re one step closer to the woman you’re becoming.</Text>
         </View>
         <View style={styles.headerActions}>
           <Pressable accessibilityLabel="Notifications" onPress={() => router.push('/notifications')} style={({ pressed }) => [styles.roundButton, pressed && styles.actionPressed]}>
@@ -162,6 +235,16 @@ export default function HomeScreen() {
 
       {!user ? <Pressable onPress={() => router.push('/welcome')} style={styles.guestStrip}><View style={styles.guestIcon}><Ionicons name="sparkles" size={16} color={colors.pinkDeep}/></View><View style={styles.guestCopy}><Text style={styles.guestTitle}>Make GWMB yours</Text><Text style={styles.guestText}>Create an account to save courses, events and opportunities.</Text></View><Ionicons name="arrow-forward" size={17} color={colors.ink}/></Pressable> : null}
 
+      <FadeIn delay={75}>
+        <View style={styles.todayHead}><Text style={styles.kicker}>TODAY IN GWMB</Text><View style={styles.freshPill}><View style={styles.freshDot}/><Text style={styles.freshText}>FRESH</Text></View></View>
+        <ScrollView ref={todayScroller} horizontal decelerationRate="fast" snapToInterval={220} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.todayTrack} onScrollBeginDrag={() => pauseAutoScroll(todayPausedUntil)} onMomentumScrollEnd={(event) => { todayPosition.current = Math.round(event.nativeEvent.contentOffset.x / 220); }}>
+          {todaySignals.map((signal) => <SpringPressable key={signal.title} onPress={() => { void tapFeedback(); router.push(signal.route); }} style={[styles.todayCard, { backgroundColor: signal.tone }]} contentStyle={styles.todayContent}>
+            <View style={[styles.todayIcon, signal.light && styles.todayIconDark]}><Ionicons name={signal.icon} size={19} color={signal.light ? 'white' : colors.pinkDeep}/></View>
+            <View style={styles.todayCopy}><Text style={[styles.todayLabel, signal.light && styles.todayLight]}>{signal.label}</Text><Text numberOfLines={2} style={[styles.todayTitle, signal.light && styles.todayLight]}>{signal.title}</Text><Text style={[styles.todayMeta, signal.light && styles.todayMetaLight]}>{signal.meta}</Text></View>
+          </SpringPressable>)}
+        </ScrollView>
+      </FadeIn>
+
       <FadeIn delay={110}><View style={styles.featureHeading}>
         <View><Text style={styles.kicker}>PICKED FOR YOU</Text><Text style={styles.featureTitle}>What’s worth your time</Text></View>
         <Text style={styles.featureCount}>0{featuredIndex + 1} / 0{featureCards.length}</Text>
@@ -176,46 +259,56 @@ export default function HomeScreen() {
       </ScrollView>
       <View style={styles.dots}>{featureCards.map((item, index) => <View key={item.key} style={[styles.paginationDot, index === featuredIndex && styles.paginationDotActive]}/>)}</View></FadeIn>
 
-      <FadeIn delay={180}><View style={styles.sectionHead}><View><Text style={styles.kicker}>YOUR MOMENTUM</Text><Text style={styles.sectionTitle}>Keep moving forward</Text></View><Pressable onPress={() => router.push('/activity')}><Text style={styles.sectionLink}>My activity</Text></Pressable></View>
-      <View style={styles.momentumRow}>
-        <SpringPressable onPress={() => { void tapFeedback(); router.push('/course/workplace-foundations'); }} style={styles.progressCard} contentStyle={styles.momentumContent}>
+      {!isMember ? benefitsSection : null}
+
+      {isMember ? <FadeIn delay={180}><View style={styles.sectionHead}><View><Text style={styles.kicker}>YOUR ACTIVITY</Text><Text style={styles.sectionTitle}>Pick up where you left off</Text></View><Pressable onPress={() => router.push('/activity')}><Text style={styles.sectionLink}>View all</Text></Pressable></View>
+      <ScrollView ref={resumeScroller} horizontal decelerationRate="fast" snapToInterval={resumeWidth + 10} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.resumeTrack} onScrollBeginDrag={() => pauseAutoScroll(resumePausedUntil)} onMomentumScrollEnd={(event) => { resumePosition.current = Math.round(event.nativeEvent.contentOffset.x / (resumeWidth + 10)); }}>
+        <SpringPressable onPress={() => { void tapFeedback(); router.push('/course/workplace-foundations'); }} style={[styles.resumeCard, styles.resumeCardDark, { width: resumeWidth }]} contentStyle={styles.resumeContent}>
           <View style={styles.progressTop}><View style={styles.progressRing}><Text style={styles.progressNumber}>{cvPercent}%</Text></View><Ionicons name="arrow-up-outline" size={18} color="white"/></View>
-          <Text style={styles.progressEyebrow}>{cvPercent === 100 ? 'CERTIFICATE READY' : courseProgress ? `LESSON ${currentLessonIndex + 1} OF ${cvCourse.lessons.length}` : 'READY TO START'}</Text>
+          <Text style={styles.progressEyebrow}>{cvPercent === 100 ? 'CERTIFICATE READY' : courseProgress ? 'CONTINUE LEARNING' : 'START LEARNING'}</Text>
           <Text style={styles.progressTitle}>CV that gets noticed</Text>
+          <Text style={styles.resumeMeta}>{cvPercent === 100 ? 'Course complete' : courseProgress ? `Lesson ${currentLessonIndex + 1} of ${cvCourse.lessons.length}` : '6 practical lessons'}</Text>
           <AnimatedProgress value={Math.max(cvPercent, 4)} height={4} color={colors.pink} trackColor="#3B3739" style={styles.progressTrack}/>
         </SpringPressable>
-        <SpringPressable onPress={() => { void tapFeedback(); router.push(nextEvent ? `/event/${nextEvent.id}` : '/events'); }} style={styles.nextMoveCard} contentStyle={styles.momentumContent}>
-          <View style={styles.nextMoveIcon}><Ionicons name={nextEvent ? 'calendar' : 'calendar-outline'} size={21} color={colors.pinkDeep}/></View>
-          <Text style={styles.nextMoveEyebrow}>{nextEvent ? 'YOU’RE IN' : 'HAPPENING SOON'}</Text>
-          <Text numberOfLines={3} style={styles.nextMoveTitle}>{nextEvent?.title || soonestEvent.title}</Text>
+        <SpringPressable onPress={() => { void tapFeedback(); router.push('/resource/weekly-planning'); }} style={[styles.resumeCard, styles.resumeCardLavender, { width: resumeWidth }]} contentStyle={styles.resumeContent}>
+          <View style={styles.resumeTop}><View style={styles.resumeIcon}><Ionicons name="document-text-outline" size={22} color="#6745D9"/></View><Ionicons name="arrow-forward" size={18} color={colors.ink}/></View>
+          <Text style={[styles.resumeEyebrow, styles.resumeEyebrowPurple]}>CONTINUE READING</Text>
+          <Text style={styles.resumeTitle}>The Weekly Planning Template</Text>
+          <Text style={styles.resumeMetaLight}>PDF · 5 pages</Text>
+        </SpringPressable>
+        <SpringPressable onPress={() => { void tapFeedback(); router.push(nextEvent ? `/event/${nextEvent.id}` : '/events'); }} style={[styles.resumeCard, styles.resumeCardPink, { width: resumeWidth }]} contentStyle={styles.resumeContent}>
+          <View style={styles.resumeTop}><View style={styles.nextMoveIcon}><Ionicons name={nextEvent ? 'calendar' : 'calendar-outline'} size={21} color={colors.pinkDeep}/></View><Ionicons name="arrow-forward" size={18} color={colors.ink}/></View>
+          <Text style={styles.nextMoveEyebrow}>{nextEvent ? 'YOUR NEXT EVENT' : 'HAPPENING SOON'}</Text>
+          <Text numberOfLines={2} style={styles.nextMoveTitle}>{nextEvent?.title || soonestEvent.title}</Text>
           <Text style={styles.nextMoveMeta}>{eventCountdown((nextEvent || soonestEvent).startsAt) || nextEvent?.dateShort || soonestEvent.dateShort}</Text>
         </SpringPressable>
-      </View></FadeIn>
+        <SpringPressable onPress={() => { void tapFeedback(); router.push(`/opportunity/${opportunities[0].id}`); }} style={[styles.resumeCard, styles.resumeCardWhite, { width: resumeWidth }]} contentStyle={styles.resumeContent}>
+          <View style={styles.resumeTop}><View style={styles.resumeIconPink}><Ionicons name="briefcase-outline" size={22} color={colors.pinkDeep}/></View><Ionicons name="arrow-forward" size={18} color={colors.ink}/></View>
+          <Text style={styles.nextMoveEyebrow}>CONTINUE EXPLORING</Text>
+          <Text numberOfLines={2} style={styles.nextMoveTitle}>{opportunities[0].title}</Text>
+          <Text style={styles.resumeMetaLight}>{opportunities[0].org}</Text>
+        </SpringPressable>
+      </ScrollView></FadeIn> : null}
 
-      <FadeIn delay={250}><View style={styles.sectionHead}><View><Text style={styles.kicker}>MEMBERSHIP, UNPACKED</Text><Text style={styles.sectionTitle}>Explore your benefits</Text></View><Text style={styles.swipeLabel}>Swipe</Text></View>
-      <ScrollView ref={benefitsScroller} horizontal decelerationRate="fast" snapToInterval={121} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.benefitsTrack} onScrollBeginDrag={() => pauseAutoScroll(benefitsPausedUntil)} onMomentumScrollEnd={(event) => { benefitsPosition.current = Math.round(event.nativeEvent.contentOffset.x / 121); }}>
-        {benefits.map(([label, icon], index) => <Pressable key={label} onPress={() => { void tapFeedback(); if (label === 'Opportunities') router.push('/opportunities'); else router.push('/membership'); }} style={({ pressed }) => [styles.benefitCard, pressed && styles.benefitCardActive]}>
-          {({ pressed }) => <><Text style={[styles.benefitIndex, pressed && styles.benefitOnPink]}>0{index + 1}</Text><View style={[styles.benefitIcon, pressed && styles.benefitIconActive]}><Ionicons name={icon} size={20} color={pressed ? colors.pinkDeep : colors.ink}/></View><Text style={[styles.benefitName, pressed && styles.benefitOnPink]}>{label}</Text><Ionicons name="arrow-forward" size={15} color={pressed ? 'white' : colors.muted}/></>}
-        </Pressable>)}
-      </ScrollView>
-      <SpringPressable onPress={() => { void tapFeedback(); router.push('/membership'); }} style={styles.benefitsCta} contentStyle={styles.benefitsCtaContent}><View><Text style={styles.benefitsCtaLabel}>THE FULL GWMB EXPERIENCE</Text><Text style={styles.benefitsCtaTitle}>View full benefits</Text></View><View style={styles.whiteArrow}><Ionicons name="arrow-forward" size={17} color={colors.ink}/></View></SpringPressable></FadeIn>
+      {isMember ? opportunitiesSection : null}
 
-      <FadeIn delay={320}><View style={styles.sectionHead}><View><Text style={styles.kicker}>CURATED FOR YOUR NEXT MOVE</Text><Text style={styles.sectionTitle}>Opportunities Corner</Text></View><Pressable onPress={() => router.push('/opportunities')}><Text style={styles.sectionLink}>See all</Text></Pressable></View>
-      <ScrollView ref={opportunitiesScroller} horizontal decelerationRate="fast" snapToInterval={228} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.opportunityTrack} onScrollBeginDrag={() => pauseAutoScroll(opportunitiesPausedUntil)} onMomentumScrollEnd={(event) => { opportunitiesPosition.current = Math.round(event.nativeEvent.contentOffset.x / 228); }}>
-        {opportunities.map((item, index) => <SpringPressable key={item.id} onPress={() => { void tapFeedback(); router.push(`/opportunity/${item.id}`); }} style={styles.opportunityCard} contentStyle={styles.opportunityContent}>
-          <View style={styles.opportunityTop}><View style={[styles.brandMark, index === 1 && styles.brandMarkPink]}><Text style={[styles.brandInitials, index === 1 && styles.brandInitialsLight]}>{item.initials}</Text></View><View style={[styles.deadlinePill, urgencyLabel(item.deadlineAt) && styles.urgentPill]}><Text style={[styles.deadlineText, urgencyLabel(item.deadlineAt) && styles.urgentText]}>{urgencyLabel(item.deadlineAt) || item.deadline.replace('Closes ', '')}</Text></View></View>
-          <Text style={styles.opportunityType}>{item.type.toUpperCase()}</Text>
-          <Text numberOfLines={2} style={styles.opportunityTitle}>{item.title}</Text>
-          <Text style={styles.opportunityOrg}>{item.org}</Text>
-          <View style={styles.opportunityFooter}><Text style={styles.opportunityLocation}>{item.location}</Text><Ionicons name="arrow-forward" size={16} color={colors.pinkDeep}/></View>
+      <FadeIn delay={230}><View style={styles.sectionHead}><View><Text style={styles.kicker}>SPOTLIGHT</Text><Text style={styles.sectionTitle}>GWMB Girls Making Moves</Text></View><Pressable onPress={() => router.push('/member-wins')}><Text style={styles.sectionLink}>See all wins</Text></Pressable></View>
+      <ScrollView ref={memberWinsScroller} horizontal decelerationRate="fast" snapToInterval={heroWidth + heroGap} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.spotlightTrack} onScrollBeginDrag={() => pauseAutoScroll(memberWinsPausedUntil)} onMomentumScrollEnd={(event) => { memberWinsPosition.current = Math.round(event.nativeEvent.contentOffset.x / (heroWidth + heroGap)); }}>
+        {memberWins.map((win, index) => <SpringPressable key={win.title} onPress={() => { void tapFeedback(); router.push('/member-wins'); }} style={[styles.spotlightCard, { width: heroWidth }]} contentStyle={styles.spotlightContent}>
+          <Image source={win.image} resizeMode="cover" style={styles.spotlightImage}/>
+          <View style={styles.spotlightShade}/>
+          <View style={styles.spotlightTop}><View style={styles.spotlightBadge}><Ionicons name="star" size={13} color={colors.pinkDeep}/><Text style={styles.spotlightBadgeText}>{win.category}</Text></View><Text style={styles.spotlightIssue}>0{index + 1}</Text></View>
+          <View style={styles.spotlightBottom}><Text style={styles.spotlightTitle}>{win.title}</Text><Text style={styles.spotlightCopy}>{win.copy}</Text><View style={styles.spotlightAction}><Text style={styles.spotlightActionText}>Explore member wins</Text><Ionicons name="arrow-forward" size={16} color={colors.ink}/></View></View>
         </SpringPressable>)}
       </ScrollView></FadeIn>
+
+      {isMember ? benefitsSection : opportunitiesSection}
 
       <FadeIn delay={390}><View style={styles.communityCard}>
         <View style={styles.communityPatternOne}/><View style={styles.communityPatternTwo}/>
         <View style={styles.communityHeader}><View style={styles.communityIcon}><Ionicons name="people" size={22} color={colors.pinkDeep}/></View><Text style={styles.communityLive}>REAL WOMEN · REAL COMMUNITY</Text></View>
         <Text style={styles.communityTitle}>There’s room for you here.</Text>
-        <Text style={styles.communityCopy}>Meet women learning, building and becoming—together.</Text>
+        <Text style={styles.communityCopy}>Meet women learning, building and becoming together.</Text>
         <ScrollView ref={communityScroller} horizontal decelerationRate="fast" snapToInterval={116} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.communityPhotoTrack} onScrollBeginDrag={() => pauseAutoScroll(communityPausedUntil)} onMomentumScrollEnd={(event) => { communityPosition.current = Math.round(event.nativeEvent.contentOffset.x / 116); }}>
           {communityPhotos.map((source,index)=><Pressable key={index} accessibilityLabel="Open the GWMB community" onPress={() => { void tapFeedback(); router.push('/community'); }} style={[styles.communityPhoto,index%3===1&&styles.communityPhotoRaised]}><Image source={source} resizeMode="cover" style={styles.communityImage}/><View style={styles.communityPhotoShade}/></Pressable>)}
         </ScrollView>
@@ -234,12 +327,14 @@ const styles = StyleSheet.create({
   notificationDot:{position:'absolute',right:8,top:7,width:8,height:8,borderRadius:4,backgroundColor:colors.pink,borderWidth:2,borderColor:'white'},
   avatar:{width:41,height:41,borderRadius:21,backgroundColor:colors.ink,alignItems:'center',justifyContent:'center',borderWidth:2,borderColor:'white'},avatarPressed:{backgroundColor:colors.pinkDeep,transform:[{scale:.97}]},avatarImage:{width:37,height:37,borderRadius:19},avatarText:{color:'white',fontSize:10,fontFamily:fonts.heading},onlineDot:{position:'absolute',right:-1,bottom:0,width:11,height:11,borderRadius:6,backgroundColor:colors.green,borderWidth:2,borderColor:'white'},
   guestStrip:{minHeight:76,borderRadius:19,backgroundColor:colors.pinkSoft,padding:12,flexDirection:'row',alignItems:'center',marginBottom:20},guestIcon:{width:42,height:42,borderRadius:14,backgroundColor:'white',alignItems:'center',justifyContent:'center'},guestCopy:{flex:1,paddingHorizontal:11},guestTitle:{fontSize:13,fontFamily:fonts.headingBold,color:colors.ink},guestText:{fontSize:10,lineHeight:15,fontFamily:fonts.body,color:colors.muted,marginTop:3},
+  todayHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:9},freshPill:{height:24,borderRadius:12,backgroundColor:'#EAF8F2',paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:5},freshDot:{width:6,height:6,borderRadius:3,backgroundColor:colors.green},freshText:{color:colors.green,fontSize:8,fontFamily:fonts.bodyBold,letterSpacing:.7},todayTrack:{gap:10,paddingRight:18,marginBottom:22},todayCard:{width:210,height:104,borderRadius:20,overflow:'hidden'},todayContent:{padding:12,flexDirection:'row',alignItems:'flex-start',gap:10},todayIcon:{width:38,height:38,borderRadius:13,backgroundColor:'white',alignItems:'center',justifyContent:'center'},todayIconDark:{backgroundColor:'rgba(255,255,255,.14)'},todayCopy:{flex:1,minWidth:0},todayLabel:{color:colors.pinkDeep,fontSize:8,fontFamily:fonts.bodyBold,letterSpacing:.75},todayTitle:{color:colors.ink,fontSize:12,lineHeight:15,fontFamily:fonts.headingBold,marginTop:3},todayMeta:{color:colors.muted,fontSize:9,fontFamily:fonts.bodyMedium,marginTop:'auto'},todayLight:{color:'white'},todayMetaLight:{color:'#C9C2C6'},
   featureHeading:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',marginBottom:12},kicker:{color:colors.pinkDeep,fontSize:10,fontFamily:fonts.bodyBold,letterSpacing:1.05},featureTitle:{color:colors.ink,fontSize:20,fontFamily:fonts.heading,letterSpacing:-.75,marginTop:4},featureCount:{color:colors.muted,fontSize:10,fontFamily:fonts.bodyBold,letterSpacing:.7},
   featureTrack:{gap:12,paddingRight:20},featureCard:{height:360,borderRadius:27,overflow:'hidden'},featureContent:{padding:18},featurePressed:{transform:[{scale:.985}]},featureImage:{position:'absolute',width:'100%',height:'100%'},featureShade:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'rgba(0,0,0,.29)'},typographicArt:{position:'absolute',top:0,right:0,bottom:0,left:0,overflow:'hidden'},artLetters:{position:'absolute',right:-15,top:45,color:'rgba(255,255,255,.09)',fontSize:150,fontFamily:fonts.heading,letterSpacing:-14},artStar:{position:'absolute',right:28,top:28},featureTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},featureLabel:{color:'white',fontSize:10,fontFamily:fonts.bodyBold,letterSpacing:1.05},featureNumber:{width:35,height:35,borderRadius:18,backgroundColor:'rgba(255,255,255,.17)',alignItems:'center',justifyContent:'center'},featureNumberText:{color:'white',fontSize:10,fontFamily:fonts.headingBold},featureBottom:{marginTop:'auto'},featureCardTitle:{color:'white',fontSize:28,lineHeight:30,fontFamily:fonts.heading,letterSpacing:-1.15,maxWidth:330},featureCopy:{color:'rgba(255,255,255,.88)',fontSize:12,lineHeight:18,fontFamily:fonts.body,marginTop:8,maxWidth:285},featureAction:{alignSelf:'flex-start',minHeight:42,borderRadius:14,backgroundColor:'white',paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:18,marginTop:17},featureActionText:{color:colors.ink,fontSize:11,fontFamily:fonts.bodyBold},dots:{height:27,flexDirection:'row',alignItems:'center',gap:5},paginationDot:{width:5,height:5,borderRadius:3,backgroundColor:'#D4CFD2'},paginationDotActive:{width:22,backgroundColor:colors.pink},
   sectionHead:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',marginTop:24,marginBottom:12},sectionTitle:{color:colors.ink,fontSize:19,fontFamily:fonts.heading,letterSpacing:-.65,marginTop:4},sectionLink:{color:colors.pinkDeep,fontSize:11,fontFamily:fonts.bodyBold,paddingBottom:2},swipeLabel:{color:colors.muted,fontSize:10,fontFamily:fonts.bodySemibold,paddingBottom:2},
-  momentumRow:{flexDirection:'row',gap:10},progressCard:{flex:1,minWidth:0,minHeight:202,borderRadius:23,backgroundColor:colors.ink,overflow:'hidden'},nextMoveCard:{flex:1,minWidth:0,minHeight:202,borderRadius:23,backgroundColor:colors.pinkSoft,borderWidth:1,borderColor:'#F6DCE8',overflow:'hidden'},momentumContent:{padding:15},cardPressed:{transform:[{translateY:-2}],opacity:.92},progressTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},progressRing:{width:53,height:53,borderRadius:27,borderWidth:5,borderColor:colors.pink,alignItems:'center',justifyContent:'center'},progressNumber:{color:'white',fontSize:11,fontFamily:fonts.headingBold},progressEyebrow:{color:'#F29BC3',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:19},progressTitle:{color:'white',fontSize:14,lineHeight:18,fontFamily:fonts.headingBold,marginTop:5},progressTrack:{marginTop:'auto'},progressFill:{height:'100%',backgroundColor:colors.pink},nextMoveIcon:{width:43,height:43,borderRadius:14,backgroundColor:'white',alignItems:'center',justifyContent:'center'},nextMoveEyebrow:{color:colors.pinkDeep,fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:18},nextMoveTitle:{color:colors.ink,fontSize:13,lineHeight:17,fontFamily:fonts.headingBold,marginTop:5},nextMoveMeta:{color:colors.muted,fontSize:10,fontFamily:fonts.bodyBold,marginTop:'auto'},
-  benefitsTrack:{gap:9,paddingRight:16},benefitCard:{width:112,height:142,borderRadius:21,backgroundColor:'#EEECEF',padding:13,borderWidth:1,borderColor:'#E7E3E5'},benefitCardActive:{backgroundColor:colors.pinkDeep,borderColor:colors.pinkDeep,transform:[{translateY:-3}]},benefitIndex:{position:'absolute',right:12,top:11,color:'#A8A1A5',fontSize:9,fontFamily:fonts.bodyBold},benefitIcon:{width:40,height:40,borderRadius:14,backgroundColor:'white',alignItems:'center',justifyContent:'center'},benefitIconActive:{backgroundColor:'white'},benefitName:{color:colors.ink,fontSize:11,lineHeight:14,fontFamily:fonts.headingBold,marginTop:'auto',marginBottom:8},benefitOnPink:{color:'white'},
+  resumeTrack:{gap:10,paddingRight:20},resumeCard:{minHeight:190,borderRadius:23,overflow:'hidden'},resumeCardDark:{backgroundColor:colors.ink},resumeCardLavender:{backgroundColor:'#F0EFFF',borderWidth:1,borderColor:'#E0DDF7'},resumeCardPink:{backgroundColor:colors.pinkSoft,borderWidth:1,borderColor:'#F6DCE8'},resumeCardWhite:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line},resumeContent:{padding:15},resumeTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},resumeIcon:{width:43,height:43,borderRadius:14,backgroundColor:'white',alignItems:'center',justifyContent:'center'},resumeIconPink:{width:43,height:43,borderRadius:14,backgroundColor:colors.pinkSoft,alignItems:'center',justifyContent:'center'},resumeEyebrow:{fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:18},resumeEyebrowPurple:{color:'#5741B8'},resumeTitle:{color:colors.ink,fontSize:15,lineHeight:19,fontFamily:fonts.headingBold,marginTop:5,maxWidth:230},resumeMeta:{color:'#BEB7BB',fontSize:10,fontFamily:fonts.bodyMedium,marginTop:5},resumeMetaLight:{color:colors.muted,fontSize:10,fontFamily:fonts.bodyMedium,marginTop:'auto'},progressTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},progressRing:{width:53,height:53,borderRadius:27,borderWidth:5,borderColor:colors.pink,alignItems:'center',justifyContent:'center'},progressNumber:{color:'white',fontSize:11,fontFamily:fonts.headingBold},progressEyebrow:{color:'#F29BC3',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:15},progressTitle:{color:'white',fontSize:15,lineHeight:19,fontFamily:fonts.headingBold,marginTop:5},progressTrack:{marginTop:'auto'},progressFill:{height:'100%',backgroundColor:colors.pink},nextMoveIcon:{width:43,height:43,borderRadius:14,backgroundColor:'white',alignItems:'center',justifyContent:'center'},nextMoveEyebrow:{color:colors.pinkDeep,fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:18},nextMoveTitle:{color:colors.ink,fontSize:15,lineHeight:19,fontFamily:fonts.headingBold,marginTop:5,maxWidth:230},nextMoveMeta:{color:colors.muted,fontSize:10,fontFamily:fonts.bodyBold,marginTop:'auto'},
+  spotlightTrack:{gap:12,paddingRight:20},spotlightCard:{height:350,borderRadius:26,backgroundColor:colors.ink,overflow:'hidden'},spotlightContent:{padding:18},spotlightImage:{position:'absolute',top:0,right:0,bottom:0,width:'100%',height:'100%'},spotlightShade:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'rgba(17,16,17,.48)'},spotlightTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},spotlightBadge:{minHeight:34,borderRadius:999,backgroundColor:'white',paddingHorizontal:11,flexDirection:'row',alignItems:'center',gap:6},spotlightBadgeText:{color:colors.ink,fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.55},spotlightIssue:{color:'white',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.8},spotlightBottom:{marginTop:'auto'},spotlightTitle:{color:'white',fontSize:27,lineHeight:30,fontFamily:fonts.heading,letterSpacing:-1,maxWidth:300},spotlightCopy:{color:'rgba(255,255,255,.88)',fontSize:11,lineHeight:17,fontFamily:fonts.body,marginTop:8,maxWidth:315},spotlightTags:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:13},spotlightTag:{borderRadius:999,backgroundColor:'rgba(255,255,255,.17)',paddingHorizontal:9,paddingVertical:6},spotlightTagText:{color:'white',fontSize:9,fontFamily:fonts.bodyBold},spotlightAction:{alignSelf:'flex-start',minHeight:42,borderRadius:14,backgroundColor:'white',paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:16,marginTop:15},spotlightActionText:{color:colors.ink,fontSize:11,fontFamily:fonts.bodyBold},
+  benefitsTrack:{gap:9,paddingRight:18},benefitStory:{height:184,borderRadius:22,padding:14,borderWidth:1,borderColor:'rgba(17,16,17,.06)',overflow:'hidden'},benefitStoryPressed:{transform:[{translateY:-2}]},benefitStoryTop:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between'},benefitLargeIcon:{width:56,height:56,borderRadius:18,backgroundColor:'white',alignItems:'center',justifyContent:'center'},benefitStoryIndex:{color:'#918A8F',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.7,marginTop:3},benefitStoryBottom:{marginTop:'auto'},benefitTitleRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},benefitStoryName:{flex:1,color:colors.ink,fontSize:16,lineHeight:20,fontFamily:fonts.headingBold,letterSpacing:-.4},benefitPromise:{color:colors.muted,fontSize:10,lineHeight:14,fontFamily:fonts.bodyMedium,marginTop:4},benefitLight:{color:'white'},benefitPromiseLight:{color:'rgba(255,255,255,.76)'},benefitArrow:{width:27,height:27,borderRadius:14,backgroundColor:colors.ink,alignItems:'center',justifyContent:'center'},benefitArrowLight:{backgroundColor:'white'},benefitProgress:{height:27,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:4},benefitProgressCount:{color:colors.muted,fontSize:9,fontFamily:fonts.bodyBold},benefitProgressTrack:{flex:1,flexDirection:'row',alignItems:'center',gap:4},benefitProgressDot:{height:3,flex:1,borderRadius:2,backgroundColor:'#DED9DC'},benefitProgressDotActive:{backgroundColor:colors.pinkDeep},
   benefitsCta:{minHeight:70,borderRadius:19,backgroundColor:colors.ink,marginTop:11,overflow:'hidden'},benefitsCtaContent:{paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},benefitsCtaPressed:{backgroundColor:colors.pinkDark},benefitsCtaLabel:{color:'#C4BDC1',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.85},benefitsCtaTitle:{color:'white',fontSize:14,fontFamily:fonts.headingBold,marginTop:4},whiteArrow:{width:36,height:36,borderRadius:18,backgroundColor:'white',alignItems:'center',justifyContent:'center'},
   opportunityTrack:{gap:10,paddingRight:16},opportunityCard:{width:218,minHeight:224,borderRadius:23,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line,overflow:'hidden'},opportunityContent:{padding:15},opportunityCardPressed:{borderColor:colors.pink,backgroundColor:colors.blush,transform:[{translateY:-2}]},opportunityTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},brandMark:{width:48,height:48,borderRadius:15,backgroundColor:colors.ink,alignItems:'center',justifyContent:'center'},brandMarkPink:{backgroundColor:colors.pinkDeep},brandInitials:{color:'white',fontSize:12,fontFamily:fonts.heading},brandInitialsLight:{color:'white'},deadlinePill:{borderRadius:999,backgroundColor:'#FFF0D8',paddingHorizontal:8,paddingVertical:6},urgentPill:{backgroundColor:colors.pinkDeep},deadlineText:{color:'#855900',fontSize:9,fontFamily:fonts.bodyBold},urgentText:{color:'white'},opportunityType:{color:colors.pinkDeep,fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.85,marginTop:17},opportunityTitle:{color:colors.ink,fontSize:15,lineHeight:19,fontFamily:fonts.headingBold,marginTop:6},opportunityOrg:{color:colors.muted,fontSize:10,fontFamily:fonts.bodyMedium,marginTop:5},opportunityFooter:{marginTop:'auto',paddingTop:13,borderTopWidth:1,borderTopColor:colors.line,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},opportunityLocation:{color:colors.muted,fontSize:10,fontFamily:fonts.body},
-  communityCard:{minHeight:475,borderRadius:26,backgroundColor:colors.pinkDeep,overflow:'hidden',marginTop:28,padding:20},communityPatternOne:{position:'absolute',width:190,height:190,borderRadius:95,borderWidth:36,borderColor:'rgba(255,255,255,.1)',right:-42,top:-57},communityPatternTwo:{position:'absolute',width:120,height:120,borderRadius:60,backgroundColor:'rgba(17,16,17,.18)',left:-38,bottom:-42},communityHeader:{flexDirection:'row',alignItems:'center',gap:10},communityIcon:{width:44,height:44,borderRadius:15,backgroundColor:'white',alignItems:'center',justifyContent:'center'},communityLive:{color:'#FFD2E5',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.9},communityTitle:{color:'white',fontSize:25,lineHeight:28,fontFamily:fonts.heading,letterSpacing:-.9,marginTop:20,maxWidth:310},communityCopy:{color:'rgba(255,255,255,.85)',fontSize:11,lineHeight:17,fontFamily:fonts.body,marginTop:7,maxWidth:320},communityPhotoTrack:{gap:8,paddingRight:16,marginTop:18,minHeight:154},communityPhoto:{width:108,height:140,borderRadius:18,overflow:'hidden',backgroundColor:'#7A0D3E'},communityPhotoRaised:{marginTop:12},communityImage:{width:'100%',height:'100%'},communityPhotoShade:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'rgba(17,16,17,.08)'},communityButton:{height:58,borderRadius:18,backgroundColor:colors.ink,overflow:'hidden',marginTop:20},communityButtonContent:{paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},communityButtonText:{color:'white',fontSize:12,fontFamily:fonts.bodyBold},communityButtonArrow:{width:34,height:34,borderRadius:17,backgroundColor:'white',alignItems:'center',justifyContent:'center'},
+  communityCard:{minHeight:475,borderRadius:26,backgroundColor:colors.pink,overflow:'hidden',marginTop:28,padding:20},communityPatternOne:{position:'absolute',width:190,height:190,borderRadius:95,borderWidth:36,borderColor:'rgba(255,255,255,.12)',right:-42,top:-57},communityPatternTwo:{position:'absolute',width:120,height:120,borderRadius:60,backgroundColor:'rgba(116,16,61,.2)',left:-38,bottom:-42},communityHeader:{flexDirection:'row',alignItems:'center',gap:10},communityIcon:{width:44,height:44,borderRadius:15,backgroundColor:'white',alignItems:'center',justifyContent:'center'},communityLive:{color:'#FFF0F7',fontSize:9,fontFamily:fonts.bodyBold,letterSpacing:.9},communityTitle:{color:'white',fontSize:25,lineHeight:28,fontFamily:fonts.heading,letterSpacing:-.9,marginTop:20,maxWidth:310},communityCopy:{color:'rgba(255,255,255,.9)',fontSize:11,lineHeight:17,fontFamily:fonts.body,marginTop:7,maxWidth:320},communityPhotoTrack:{gap:8,paddingRight:16,marginTop:18,minHeight:154},communityPhoto:{width:108,height:140,borderRadius:18,overflow:'hidden',backgroundColor:'#7A0D3E'},communityPhotoRaised:{marginTop:12},communityImage:{width:'100%',height:'100%'},communityPhotoShade:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'rgba(17,16,17,.08)'},communityButton:{height:58,borderRadius:18,backgroundColor:colors.ink,overflow:'hidden',marginTop:20},communityButtonContent:{paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},communityButtonText:{color:'white',fontSize:12,fontFamily:fonts.bodyBold},communityButtonArrow:{width:34,height:34,borderRadius:17,backgroundColor:'white',alignItems:'center',justifyContent:'center'},
 });
